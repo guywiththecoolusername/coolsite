@@ -3,33 +3,22 @@ export default {
     const url = new URL(request.url);
     const discordUrl = url.searchParams.get("url");
 
-    // Validate the URL (only allow Discord CDN links)
-    if (
-      discordUrl &&
-      discordUrl.startsWith("https://cdn.discordapp.com/attachments/")
-    ) {
-      return new Response(
-        `<!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>CoolGuy Viewer</title>
-            <style>
-                body { font-family: Arial, sans-serif; text-align: center; }
-                iframe { width: 90vw; height: 90vh; border: none; }
-            </style>
-        </head>
-        <body>
-            <h2>Loading file...</h2>
-            <iframe src="${discordUrl}" allowfullscreen></iframe>
-        </body>
-        </html>`,
-        { headers: { "Content-Type": "text/html" } }
-      );
+    // Validate and Fetch the Content
+    if (discordUrl && discordUrl.startsWith("https://cdn.discordapp.com/attachments/")) {
+      try {
+        const response = await fetch(discordUrl);
+        const htmlContent = await response.text();
+
+        // Serve the HTML content directly
+        return new Response(htmlContent, {
+          headers: { "Content-Type": "text/html" },
+        });
+      } catch (err) {
+        return new Response("Failed to fetch the Discord file.", { status: 500 });
+      }
     }
 
-    // If no valid Discord URL, redirect to the main site
+    // Redirect to the main site if invalid or no URL
     return Response.redirect("https://coolguy.cfd", 302);
   },
 };
